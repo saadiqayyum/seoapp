@@ -1,0 +1,398 @@
+{
+  "domain": "https://www.designgurus.io",
+  "generated_at": "2026-04-19T22:44:40.890228+00:00",
+  "keywords": [
+    {
+      "keyword": "system design interview",
+      "your_rank": null,
+      "your_url": null,
+      "your_page": null,
+      "top_competitors": [
+        {
+          "rank": 1,
+          "url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+          "title": "System Design Interview – An insider's guide, Second Edition",
+          "domain": "bytes.usc.edu"
+        },
+        {
+          "rank": 2,
+          "url": "https://www.reddit.com/r/ExperiencedDevs/comments/1opqn6e/how_to_study_for_system_design_interviews_as_an/",
+          "title": "How to study for system design interviews as an ...",
+          "domain": "www.reddit.com"
+        },
+        {
+          "rank": 3,
+          "url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+          "title": "System Design Interview – An insider's guide",
+          "domain": "www.amazon.com"
+        },
+        {
+          "rank": 4,
+          "url": "https://interviewing.io/guides/system-design-interview",
+          "title": "System Design Interview Guide for Senior Engineers",
+          "domain": "interviewing.io"
+        },
+        {
+          "rank": 5,
+          "url": "https://medium.com/@sentalkssane/a-beginners-guide-to-system-design-76d64689788b",
+          "title": "A Beginner's Guide to System Design | by Aritra Sen",
+          "domain": "medium.com"
+        }
+      ],
+      "serp_features": {
+        "has_featured_snippet": false,
+        "has_knowledge_panel": true,
+        "has_video_carousel": true,
+        "has_image_pack": false,
+        "has_local_pack": false,
+        "people_also_ask": []
+      },
+      "on_page_issues": [
+        "Title tag is 86 characters — too long (aim for 50-60)",
+        "Keyword 'system design interview' not found in title tag",
+        "Meta description is 200 characters — too long (aim for 150-160)",
+        "Multiple H1 tags found (4) — should be exactly one",
+        "Keyword 'system design interview' not found in H1 tag",
+        "Word count (892) is below 80% of competitor average (225184) — add ~224292 more words",
+        "No schema markup (JSON-LD) found — add structured data",
+        "5 of 44 images missing alt text",
+        "Performance score is 45/100 — needs significant improvement",
+        "Interaction to Next Paint is 280.0ms (threshold: 200ms) — rated AVERAGE",
+        "Time to First Byte is 0.861s (threshold: 0.8s) — rated AVERAGE"
+      ],
+      "missing_topics": [
+        {
+          "topic": "video carousel opportunity — create video content",
+          "example_heading": "Video carousel visible in SERP",
+          "level": "H2",
+          "frequency": 0,
+          "source_competitors": [],
+          "kind": "serp_feature"
+        }
+      ],
+      "backlink_gap": [],
+      "internal_link_score": 0.4,
+      "internal_link_issues": [
+        "Only 1 internal links point to this page — add more contextual links from blog posts and related pages",
+        "None of the 1 incoming anchor texts contain keyword terms ('system design interview') — update anchor text to be more descriptive"
+      ],
+      "page_speed": {
+        "score": 45,
+        "lcp": 1.881,
+        "lcp_rating": "FAST",
+        "fid": null,
+        "fid_rating": null,
+        "cls": 0.0,
+        "cls_rating": "FAST",
+        "inp": 280.0,
+        "inp_rating": "AVERAGE",
+        "fcp": 1.763,
+        "fcp_rating": "FAST",
+        "ttfb": 0.861,
+        "ttfb_rating": "AVERAGE"
+      },
+      "your_page_data": {
+        "url": "https://www.designgurus.io",
+        "title": "Tech Interview Preparation – System Design, Coding & Behavioral Courses | Design Gurus",
+        "meta_description": "Ace system design, coding, and behavioral interviews with Design Gurus' all-in-one prep platform. Access expert-led courses, mock interviews, and resume reviews – start your FAANG job preparation now!",
+        "h1": [
+          "Grokking System Design and Coding Interview",
+          "Stop Thinking, Start Grokking",
+          "Hear from Successful Tech Professionals",
+          "Why Design Gurus?"
+        ],
+        "h2": [
+          "Courses and mock interviews crafted by FAANG engineers to help you confidently tackle system design, coding, and behavioral interviews.",
+          "The Ultimate Tech Interview Training Ground",
+          "Join 300,000+ students already learning to become tech interview superstars!"
+        ],
+        "h3": [
+          "Welcome to DesignGurus.io, your comprehensive training hub for nailing tech interviews. We're your secret weapon in conquering system design, coding and behavioral interviews, preparing you from every angle to land your dream job.",
+          "System Design Interview Roadmap",
+          "Coding Interview Roadmap",
+          "Mock Interviews",
+          "Resume Reviews"
+        ],
+        "word_count": 892,
+        "has_schema": false,
+        "internal_links": 17,
+        "external_links": 5
+      },
+      "raw_competitor_data": [
+        {
+          "url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+          "title": "",
+          "meta_description": "",
+          "h1": [],
+          "h2": [],
+          "h3": [],
+          "word_count": 664806,
+          "has_schema": false,
+          "internal_links": 0,
+          "external_links": 0
+        },
+        {
+          "url": "https://www.reddit.com/r/ExperiencedDevs/comments/1opqn6e/how_to_study_for_system_design_interviews_as_an/",
+          "title": "[blocked by robots.txt]",
+          "meta_description": "",
+          "h1": [],
+          "h2": [],
+          "h3": [],
+          "word_count": 0,
+          "has_schema": false,
+          "internal_links": 0,
+          "external_links": 0
+        },
+        {
+          "url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+          "title": "System Design Interview – An insider's guide: Xu, Alex: 9798664653403: Amazon.com: Books",
+          "meta_description": "System Design Interview – An insider's guide [Xu, Alex] on Amazon.com. *FREE* shipping on qualifying offers. System Design Interview – An insider's guide",
+          "h1": [
+            "Follow the author",
+            "System Design Interview – An insider's guide"
+          ],
+          "h2": [
+            "Skip to",
+            "Keyboard shortcuts",
+            "Frequently bought together",
+            "Explore more items",
+            "Customers also bought or read",
+            "Product details",
+            "Videos",
+            "About the author",
+            "Alex Xu",
+            "Related books",
+            "Customer reviews"
+          ],
+          "h3": [
+            "Shipping & Fee Details",
+            "Sorry, there was a problem.",
+            "Sorry, there was a problem.",
+            "Purchase options and add-ons",
+            "Customers say",
+            "Reviews with images",
+            "Top reviews from the United States",
+            "Top reviews from other countries"
+          ],
+          "word_count": 5554,
+          "has_schema": false,
+          "internal_links": 473,
+          "external_links": 71
+        },
+        {
+          "url": "https://interviewing.io/guides/system-design-interview",
+          "title": "System Design Interview Guide for Senior Engineers",
+          "meta_description": "A complete guide for senior engineers on how to prepare for a system design interview.",
+          "h1": ["A Senior Engineer's Guide to the System Design Interview"],
+          "h2": [
+            "How To Prepare For a System Design Interview",
+            "Table of Contents",
+            "Introduction to System Design",
+            "The difference between engineering problems and design problems",
+            "How approaching a system design interview is different than a coding interview",
+            "What it’s like to walk into a system design interview",
+            "What your interviewer looks for, and what they don't",
+            "Green Flags, Red Flags, and other signposts",
+            "We know exactly what to do and say to get the company, title, and salary you want."
+          ],
+          "h3": [
+            "Anecdote",
+            "Remember",
+            "Anecdote",
+            "Tip",
+            "Anecdote",
+            "Remember",
+            "What your interviewer wants to see",
+            "What your interviewer is not looking for",
+            "Red Flag #1: You believe that to pass a system design interview, you should just “play the game, keep talking, and make sure nobody explodes.”",
+            "Green Flag #1: You communicate honestly about what you know and what you don’t.",
+            "Red Flag #2: You find yourself pushing against interviewer feedback.",
+            "Green Flag #2: The interview feels like a collaboration between you and the interviewer.",
+            "Red Flag #3: You skip over questions and ignore interviewer prompts, trying to move the interview ahead without addressing their concerns.",
+            "Green Flag #3: Your role determines who should drive the focus and pace of the interview.",
+            "Anecdote from a seasoned interviewer",
+            "Red Flag #4: You leave long stretches (several minutes) of silence multiple times throughout the interview.",
+            "Green Flag #4: You take time to collect your thoughts and refine solutions before offering them up out loud/on the board.",
+            "Tip",
+            "A few more signposts",
+            "Don’t say",
+            "Do say",
+            "Don’t say",
+            "Do say",
+            "Don’t say",
+            "Do say",
+            "Remember"
+          ],
+          "word_count": 5193,
+          "has_schema": false,
+          "internal_links": 139,
+          "external_links": 8
+        },
+        {
+          "url": "https://medium.com/@sentalkssane/a-beginners-guide-to-system-design-76d64689788b",
+          "title": "[error: Client error '403 Forbidden' for url 'https://medium.com/@sentalkssane/a-beginners-guide-to-system-design-76d64689788b'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403]",
+          "meta_description": "",
+          "h1": [],
+          "h2": [],
+          "h3": [],
+          "word_count": 0,
+          "has_schema": false,
+          "internal_links": 0,
+          "external_links": 0
+        }
+      ],
+      "competitor_insights": [
+        {
+          "category": "title",
+          "observation": "2/2 competitors include \"system design interview\" in their title; yours does not.",
+          "severity": "high",
+          "recommendation": "Rewrite your title tag to include the phrase \"system design interview\" near the start. Competitor patterns: \"System Design Interview – An insider's guide: Xu, Alex: 9798664653403: Amazon.com: Books\", \"System Design Interview Guide for Senior Engineers\".",
+          "your_value": "Tech Interview Preparation – System Design, Coding & Behavioral Courses | Design Gurus",
+          "competitor_avg": "2/2 contain the keyword",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "missing keyword"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "contains keyword"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "contains keyword"
+            }
+          ]
+        },
+        {
+          "category": "word_count",
+          "observation": "Your page has 892 words; top competitors average 225184 words (0% of competitor depth).",
+          "severity": "high",
+          "recommendation": "Expand content by ~224292 words. Match the depth of competitors like bytes.usc.edu (664806 words).",
+          "your_value": "892 words",
+          "competitor_avg": "225184 words",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "664806 words"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "5554 words"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "5193 words"
+            }
+          ]
+        },
+        {
+          "category": "headings",
+          "observation": "Your structure: 3 H2 / 5 H3. Competitor average: 10.0 H2 / 17.0 H3.",
+          "severity": "medium",
+          "recommendation": "Restructure the page with more sub-sections. Top result (bytes.usc.edu) uses 0 H2s and 0 H3s.",
+          "your_value": "3 H2 / 5 H3",
+          "competitor_avg": "10.0 H2 / 17.0 H3",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "0 H2 / 0 H3"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "11 H2 / 8 H3"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "9 H2 / 26 H3"
+            }
+          ]
+        },
+        {
+          "category": "internal_links",
+          "observation": "Your page has 17 internal links; competitors average 306.",
+          "severity": "medium",
+          "recommendation": "Add ~289 contextual internal links to related pages on your domain. Competitors use internal linking to spread PageRank across topical clusters.",
+          "your_value": "17 internal links",
+          "competitor_avg": "306 internal links",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "0 internal links"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "473 internal links"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "139 internal links"
+            }
+          ]
+        },
+        {
+          "category": "external_links",
+          "observation": "Your page has 5 outbound citations; competitors average 39.",
+          "severity": "low",
+          "recommendation": "Cite authoritative external sources to build topical credibility. Aim for 3-5 high-quality outbound links to primary sources.",
+          "your_value": "5 external links",
+          "competitor_avg": "39 external links",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "0 external links"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "71 external links"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "8 external links"
+            }
+          ]
+        },
+        {
+          "category": "meta",
+          "observation": "Your meta description: 200 chars. Competitors average 119 chars across 2 pages.",
+          "severity": "low",
+          "recommendation": "Write a 150-160 char meta description that leads with the target keyword and includes a concrete value proposition. Example competitor copy: \"System Design Interview – An insider's guide [Xu, Alex] on Amazon.com. *FREE* shipping on qualifying offers. System Desi...\"",
+          "your_value": "200 chars",
+          "competitor_avg": "119 chars",
+          "evidence": [
+            {
+              "competitor_url": "https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf",
+              "competitor_domain": "bytes.usc.edu",
+              "value": "0 chars"
+            },
+            {
+              "competitor_url": "https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF",
+              "competitor_domain": "www.amazon.com",
+              "value": "153 chars"
+            },
+            {
+              "competitor_url": "https://interviewing.io/guides/system-design-interview",
+              "competitor_domain": "interviewing.io",
+              "value": "86 chars"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
