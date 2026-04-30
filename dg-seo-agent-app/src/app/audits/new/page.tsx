@@ -82,7 +82,10 @@ export default function NewAuditPage() {
             <p className="text-sm text-muted-foreground">
               You don&apos;t have an active domain yet.
             </p>
-            <Button render={<Link href="/domains">Add a domain</Link>} />
+            <Button
+              nativeButton={false}
+              render={<Link href="/domains">Add a domain</Link>}
+            />
           </CardContent>
         </Card>
       ) : (

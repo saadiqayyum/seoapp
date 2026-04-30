@@ -19,7 +19,10 @@ export function EmptyState({ state, domainLabel }: EmptyStateProps) {
             <p className="text-xs text-muted-foreground">
               Add a site to start running SEO audits against it.
             </p>
-            <Button render={<Link href="/domains">Add a domain</Link>} />
+            <Button
+              nativeButton={false}
+              render={<Link href="/domains">Add a domain</Link>}
+            />
           </CardContent>
         </Card>
       </div>
@@ -38,7 +41,10 @@ export function EmptyState({ state, domainLabel }: EmptyStateProps) {
             Kick off your first run — the agent analyzes rankings, competitors,
             and on-page signals.
           </p>
-          <Button render={<Link href="/audits/new">Start audit</Link>} />
+          <Button
+            nativeButton={false}
+            render={<Link href="/audits/new">Start audit</Link>}
+          />
         </CardContent>
       </Card>
     </div>

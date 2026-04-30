@@ -73,6 +73,7 @@ export default function AuditsPage() {
         </div>
         {currentDomain && (
           <Button
+            nativeButton={false}
             render={
               <Link href="/audits/new">
                 <PlayCircle className="mr-1.5 h-4 w-4" />

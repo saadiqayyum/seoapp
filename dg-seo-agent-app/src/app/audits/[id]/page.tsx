@@ -70,7 +70,10 @@ export default function AuditDetailPage({
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <AlertCircle className="h-10 w-10 text-red-500/70" />
             <p className="text-sm">{error}</p>
-            <Button render={<Link href="/audits">Back to history</Link>} />
+            <Button
+              nativeButton={false}
+              render={<Link href="/audits">Back to history</Link>}
+            />
           </CardContent>
         </Card>
       </div>

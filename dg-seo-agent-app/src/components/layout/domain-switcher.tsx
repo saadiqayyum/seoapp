@@ -63,8 +63,8 @@ export function DomainSwitcher() {
         }
       />
       <Popover.Portal>
-        <Popover.Positioner sideOffset={6} align="start">
-          <Popover.Popup className="z-50 w-64 rounded-lg border bg-popover p-2 text-popover-foreground shadow-md">
+        <Popover.Positioner sideOffset={6} align="start" className="z-50">
+          <Popover.Popup className="w-64 rounded-lg border bg-popover p-2 text-popover-foreground shadow-md">
             <p className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Current domain
             </p>
