@@ -158,7 +158,7 @@ export default function AuditDetailPage({
               <div>
                 <p className="text-sm font-medium">Audit complete</p>
                 <p className="text-xs text-muted-foreground">
-                  {audit.report.keywords.length} keywords analyzed
+                  {(audit.report.keywords ?? []).length} keywords analyzed
                 </p>
               </div>
             </div>
