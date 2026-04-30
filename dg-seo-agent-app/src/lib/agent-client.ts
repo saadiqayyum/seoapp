@@ -9,7 +9,7 @@ const POLL_TIMEOUT_MS = 15 * 60 * 1_000; // 15 min max
 
 function agentHeaders(): HeadersInit {
   const h: HeadersInit = { "Content-Type": "application/json" };
-  if (AGENT_API_KEY) h["X-Api-Key"] = AGENT_API_KEY;
+  if (AGENT_API_KEY) h["X-API-Key"] = AGENT_API_KEY;
   return h;
 }
 
@@ -36,6 +36,14 @@ interface AgentOutput {
   errors: string[];
 }
 
+/** Orkest run response shape. */
+interface OrkestRunResponse {
+  id: string;
+  status: string;
+  output_data: AgentOutput | null;
+  error_message: string | null;
+}
+
 export function buildAgentInput(
   targetDomain: string,
   keywords: string[]
@@ -49,7 +57,7 @@ export function buildAgentInput(
   };
 }
 
-/** Start a run and return its run_id. Returns 202 immediately. */
+/** POST /runs — returns 202 immediately with run id. */
 async function startRun(input: AgentInput): Promise<string> {
   const res = await fetch(`${AGENT_BASE_URL}/runs`, {
     method: "POST",
@@ -60,18 +68,14 @@ async function startRun(input: AgentInput): Promise<string> {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`POST /runs failed ${res.status}: ${text}`);
   }
-  const data = (await res.json()) as { run_id?: string };
-  if (!data.run_id) {
-    throw new Error(
-      `POST /runs missing run_id in response. Agent pod may be running old image. Got: ${JSON.stringify(
-        data
-      )}`
-    );
+  const data = (await res.json()) as OrkestRunResponse;
+  if (!data.id) {
+    throw new Error(`POST /runs missing id in response. Got: ${JSON.stringify(data)}`);
   }
-  return data.run_id;
+  return data.id;
 }
 
-/** Poll until status is completed or failed. Returns final output. */
+/** Poll GET /runs/{id} until completed or failed. */
 async function pollRun(runId: string): Promise<AgentOutput> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -80,28 +84,22 @@ async function pollRun(runId: string): Promise<AgentOutput> {
       headers: agentHeaders(),
     });
     if (!res.ok) throw new Error(`GET /runs/${runId} failed ${res.status}`);
-    const data = (await res.json()) as {
-      status: string;
-      output: AgentOutput | null;
-      error: string | null;
-    };
+    const data = (await res.json()) as OrkestRunResponse;
     if (data.status === "completed") {
-      if (!data.output) throw new Error("Run completed but output is null");
-      return data.output;
+      if (!data.output_data) throw new Error(`Run ${runId} completed but output_data is null`);
+      return data.output_data;
     }
     if (data.status === "failed") {
-      throw new Error(data.error ?? "Agent run failed");
+      throw new Error(data.error_message ?? "Agent run failed");
     }
     // status === "running" — keep polling
   }
-  throw new Error(
-    `Agent run timed out after ${POLL_TIMEOUT_MS / 60_000} minutes`
-  );
+  throw new Error(`Agent run timed out after ${POLL_TIMEOUT_MS / 60_000} minutes`);
 }
 
 /**
  * Run the agent and return the final state.
- * Starts an async run on the Orkest agent pod, polls until done.
+ * POST /runs returns 202 immediately; polls GET /runs/{id} until done.
  */
 export async function runAgent(
   targetDomain: string,
@@ -110,7 +108,7 @@ export async function runAgent(
   const input = buildAgentInput(targetDomain, keywords);
   const runId = await startRun(input);
   const output = await pollRun(runId);
-  return { threadId: runId, output }; // threadId reused for run_id — stored in DB for tracing
+  return { threadId: runId, output };
 }
 
 /** Build the ReportData object the web-app renders from agent output. */
@@ -121,6 +119,6 @@ export function toReportData(
   return {
     domain: targetDomain,
     generated_at: new Date().toISOString(),
-    keywords: output.results,
+    keywords: output.results ?? [],
   };
 }

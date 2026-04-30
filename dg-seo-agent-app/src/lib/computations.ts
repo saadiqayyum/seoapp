@@ -6,7 +6,7 @@ import type {
 } from "./types";
 
 export function computeHealthScore(keywords: KeywordData[]): number {
-  if (keywords.length === 0) return 0;
+  if (!keywords?.length) return 0;
 
   let totalScore = 0;
 
@@ -64,7 +64,7 @@ function summarizeInsight(insight: CompetitorInsight): {
 export function computeActionItems(keywords: KeywordData[]): ActionItem[] {
   const items: ActionItem[] = [];
 
-  for (const kw of keywords) {
+  for (const kw of (keywords ?? [])) {
     // Competitor-grounded insights — now the primary source of "why we're losing"
     for (const insight of kw.competitor_insights) {
       const { title, description, evidence } = summarizeInsight(insight);
@@ -208,7 +208,7 @@ export function aggregateCompetitors(
     { ranks: number[]; keywords: string[] }
   >();
 
-  for (const kw of keywords) {
+  for (const kw of (keywords ?? [])) {
     for (const comp of kw.top_competitors) {
       const existing = domainMap.get(comp.domain) || {
         ranks: [],
@@ -245,7 +245,7 @@ export function aggregateSerpFeatures(
 
   return features.map(({ key, label }) => ({
     feature: label,
-    count: keywords.filter(
+    count: (keywords ?? []).filter(
       (kw) => kw.serp_features[key as keyof typeof kw.serp_features] === true
     ).length,
   }));
