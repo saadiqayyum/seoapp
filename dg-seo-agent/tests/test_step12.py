@@ -92,8 +92,18 @@ SAMPLE_KW = {
         "external_links": 2,
     },
     "backlink_gap": [
-        "bigpub.com (DA: 85, links to 2 competitors)",
-        "techblog.com (DA: 60, links to 2 competitors)",
+        {
+            "source_domain": "bigpub.com",
+            "opr_score": 8.5,
+            "links_to_competitors": ["https://comp1.com/page", "https://comp2.com/page"],
+            "links_to_you": False,
+        },
+        {
+            "source_domain": "techblog.com",
+            "opr_score": 6.0,
+            "links_to_competitors": ["https://comp1.com/page", "https://comp2.com/page"],
+            "links_to_you": False,
+        },
     ],
     "internal_link_score": 0.45,
     "internal_link_issues": ["Only 2 internal links point to this page"],

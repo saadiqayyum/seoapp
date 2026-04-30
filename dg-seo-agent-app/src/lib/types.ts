@@ -83,6 +83,13 @@ export interface CompetitorInsight {
   evidence: InsightEvidence[];
 }
 
+export interface BacklinkGap {
+  source_domain: string;
+  opr_score: number;
+  links_to_competitors: string[];
+  links_to_you: boolean;
+}
+
 export interface KeywordData {
   keyword: string;
   your_rank: number | null;
@@ -92,7 +99,7 @@ export interface KeywordData {
   top_competitors: Competitor[];
   on_page_issues: string[];
   missing_topics: MissingTopic[];
-  backlink_gap: string[];
+  backlink_gap: BacklinkGap[];
   internal_link_score: number;
   internal_link_issues: string[];
   page_speed: PageSpeed | null;

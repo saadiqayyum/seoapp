@@ -9,7 +9,7 @@ from seo_agent.tools.serp import check_rankings_node
 from seo_agent.tools.competitor import analyse_competitors_node
 from seo_agent.tools.onpage import audit_onpage_node
 from seo_agent.tools.pagespeed import get_pagespeed, format_pagespeed_issues
-# from seo_agent.tools.backlinks import find_backlink_gaps_node  # Skipped: no Moz key
+from seo_agent.tools.backlinks import find_backlink_gaps_node
 from seo_agent.tools.content_gap import find_content_gaps_node
 from seo_agent.tools.competitor_insights import competitor_insights_node
 from seo_agent.tools.internal_links import audit_internal_links_node
@@ -53,31 +53,29 @@ def build_graph() -> StateGraph:
 
     Pipeline:
         check_rankings -> analyse_competitors -> audit_onpage -> pagespeed
-        -> find_backlink_gaps -> find_content_gaps -> audit_internal_links -> END
+        -> find_backlink_gaps -> find_content_gaps -> competitor_insights
+        -> audit_internal_links -> END
 
     Returns:
         Compiled StateGraph ready for invocation.
     """
     graph = StateGraph(SEOAgentState)
 
-    # Add nodes
     graph.add_node("check_rankings", check_rankings_node)
     graph.add_node("analyse_competitors", analyse_competitors_node)
     graph.add_node("audit_onpage", audit_onpage_node)
     graph.add_node("pagespeed", _pagespeed_node)
-    # graph.add_node("find_backlink_gaps", find_backlink_gaps_node)  # Skipped: no Moz key
+    graph.add_node("find_backlink_gaps", find_backlink_gaps_node)
     graph.add_node("find_content_gaps", find_content_gaps_node)
     graph.add_node("competitor_insights", competitor_insights_node)
     graph.add_node("audit_internal_links", audit_internal_links_node)
 
-    # Wire edges (sequential pipeline)
     graph.set_entry_point("check_rankings")
     graph.add_edge("check_rankings", "analyse_competitors")
     graph.add_edge("analyse_competitors", "audit_onpage")
     graph.add_edge("audit_onpage", "pagespeed")
-    # graph.add_edge("pagespeed", "find_backlink_gaps")  # Skipped: no Moz key
-    # graph.add_edge("find_backlink_gaps", "find_content_gaps")
-    graph.add_edge("pagespeed", "find_content_gaps")
+    graph.add_edge("pagespeed", "find_backlink_gaps")
+    graph.add_edge("find_backlink_gaps", "find_content_gaps")
     graph.add_edge("find_content_gaps", "competitor_insights")
     graph.add_edge("competitor_insights", "audit_internal_links")
     graph.add_edge("audit_internal_links", END)

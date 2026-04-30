@@ -113,7 +113,7 @@ export function KeywordDetailTabs({ keyword: kw }: KeywordDetailTabsProps) {
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <ContentGapsCard topics={kw.missing_topics} />
-          <BacklinkOpportunities domains={kw.backlink_gap} />
+          <BacklinkOpportunities gaps={kw.backlink_gap} />
         </div>
         <PeopleAlsoAsk questions={kw.serp_features.people_also_ask} />
       </TabsContent>

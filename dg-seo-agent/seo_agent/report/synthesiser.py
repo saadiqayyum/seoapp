@@ -10,7 +10,7 @@ import logging
 from google import genai
 
 from seo_agent.config import settings
-from seo_agent.state import KeywordData, MissingTopic, CompetitorInsight
+from seo_agent.state import KeywordData, MissingTopic, CompetitorInsight, BacklinkGap
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,11 @@ Score: {internal_link_score}/1.0
 Issues:
 {internal_link_issues}
 
-## Backlink Gaps
+## Backlink Gaps (URL-level — source domains linking to competitor URLs ranking for this keyword, but not to ours)
+
+Each entry shows the source domain, its OpenPageRank score (0-10, higher = more authoritative),
+and the specific competitor URLs it already references. Discovered via Google search for the
+exact competitor URL — coverage is partial (most-visible linkers only), not exhaustive.
 
 {backlink_gaps}
 
@@ -96,7 +100,7 @@ Cite the internal-link score and specific linking issues.
 ### Action Plan
 - **Quick wins (< 1 day):** e.g. title rewrite, meta description, schema snippet
 - **Medium-term (1-4 weeks):** content expansion, new sections from missing topics
-- **Long-term:** authority building (only if backlink data is present)
+- **Long-term:** authority building — for each top-OPR backlink gap domain, suggest a concrete outreach angle (e.g. "they cover competitor X's page on topic Y; pitch our deeper coverage of Y"). Cite the source domain, its OPR, and which competitor URL it already references.
 
 Write in clean markdown. Be specific. Be direct. Cite.
 """
@@ -214,6 +218,24 @@ def _format_competitor_insights(insights: list[CompetitorInsight]) -> str:
     return "\n".join(lines)
 
 
+def _format_backlink_gaps(gaps: list[BacklinkGap]) -> str:
+    if not gaps:
+        return "  - No backlink gaps detected"
+    lines = []
+    for g in gaps[:15]:
+        comp_urls = g.get("links_to_competitors", [])
+        comp_count = len(comp_urls)
+        opr = g.get("opr_score", 0.0)
+        sample = ", ".join(comp_urls[:2])
+        if comp_count > 2:
+            sample += f", +{comp_count - 2} more"
+        lines.append(
+            f"  - {g['source_domain']} (OPR {opr:.1f}/10, links to {comp_count} competitor URL"
+            f"{'s' if comp_count != 1 else ''}: {sample})"
+        )
+    return "\n".join(lines)
+
+
 def _format_missing_topics(topics: list[MissingTopic]) -> str:
     if not topics:
         return "  - No content gaps detected"
@@ -264,7 +286,7 @@ def generate_keyword_report(kw: KeywordData, target_domain: str) -> str:
         page_speed_formatted=_format_page_speed(kw),
         internal_link_score=kw.get("internal_link_score", 0.0),
         internal_link_issues=_format_issues(kw.get("internal_link_issues", [])),
-        backlink_gaps=_format_issues(kw.get("backlink_gap", [])),
+        backlink_gaps=_format_backlink_gaps(kw.get("backlink_gap", [])),
     )
 
     client = _get_client()

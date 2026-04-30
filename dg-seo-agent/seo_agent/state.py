@@ -61,6 +61,20 @@ class InsightEvidence(TypedDict, total=False):
     value: str                       # stringified metric (e.g. "3200 words", "yes")
 
 
+class BacklinkGap(TypedDict):
+    """A source domain that links to one or more competitor URLs but not yours.
+
+    URL-level (not domain-level): the competitor URLs in `links_to_competitors`
+    are the specific pages ranking for the keyword, not the competitor's homepage.
+    Discovered via SerpAPI exact-URL search; scored via OpenPageRank.
+    """
+
+    source_domain: str               # Domain of the page that references competitor URL(s)
+    opr_score: float                 # OpenPageRank 0.0 – 10.0 (0 if unscored)
+    links_to_competitors: list[str]  # Specific competitor URLs this source mentions
+    links_to_you: bool               # Always False — kept for shape stability
+
+
 class CompetitorInsight(TypedDict):
     """A data-backed finding derived from comparing target to competitors.
 
@@ -88,7 +102,7 @@ class KeywordData(TypedDict):
     serp_features: SERPFeatures
     on_page_issues: list[str]
     missing_topics: list[MissingTopic]  # competitor-attributed topic gaps
-    backlink_gap: list[str]             # Domains linking to competitors but not you
+    backlink_gap: list[BacklinkGap]     # URL-level: source domains linking to competitor URLs but not yours
     internal_link_score: float          # 0.0 – 1.0
     internal_link_issues: list[str]
     page_speed: dict | None             # Core Web Vitals from PageSpeed API

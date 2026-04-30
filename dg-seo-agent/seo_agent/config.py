@@ -11,9 +11,7 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     gemini_model_id: str = "gemini-2.0-flash"
     serpapi_key: str = ""
-    moz_access_id: str = ""
-    moz_secret_key: str = ""
-    ahrefs_api_key: str = ""  # Optional, preferred over Moz if available
+    openpagerank_api_key: str = ""
     pagespeed_api_key: str = ""
 
     # Target

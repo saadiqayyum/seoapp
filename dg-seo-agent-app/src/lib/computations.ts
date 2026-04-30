@@ -136,12 +136,15 @@ export function computeActionItems(keywords: KeywordData[]): ActionItem[] {
 
     // Backlink gaps
     if (kw.backlink_gap.length > 0) {
+      const top = kw.backlink_gap.slice(0, 3);
       items.push({
         keyword: kw.keyword,
         category: "backlinks",
         priority: kw.backlink_gap.length > 5 ? "high" : "medium",
         title: `Target ${kw.backlink_gap.length} backlink opportunities`,
-        description: `Top targets: ${kw.backlink_gap.slice(0, 3).join(", ")}`,
+        description: `Top targets: ${top
+          .map((g) => `${g.source_domain} (OPR ${g.opr_score.toFixed(1)})`)
+          .join(", ")}`,
       });
     }
 

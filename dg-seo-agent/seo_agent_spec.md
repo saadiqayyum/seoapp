@@ -15,7 +15,7 @@ The agent runs a structured pipeline: for each keyword it checks rankings, scrap
 | Agent framework | LangGraph | Predictable pipeline, easy to debug and retry individual nodes |
 | LLM | Claude claude-sonnet-4-6 via Anthropic SDK | Report writing and synthesis |
 | SERP data | SerpAPI | Simple REST API, reliable ranking data + PAA + SERP features |
-| Backlink data | Moz API (free tier) or Ahrefs API | Backlink gap analysis |
+| Backlink data | SerpAPI exact-URL search + OpenPageRank | URL-level link discovery + free domain authority scoring (no paid backlink API) |
 | Web scraping | `httpx` + `BeautifulSoup4` | Competitor page analysis |
 | Page speed | Google PageSpeed Insights API | Core Web Vitals (free, 25k queries/day) |
 | Topic matching | `thefuzz` | Lightweight fuzzy heading comparison — edge cases handled by LLM synthesis |
@@ -66,9 +66,7 @@ seo-agent/
 
 ANTHROPIC_API_KEY=
 SERPAPI_KEY=
-MOZ_ACCESS_ID=
-MOZ_SECRET_KEY=
-AHREFS_API_KEY=           # Optional, preferred over Moz if available
+OPENPAGERANK_API_KEY=     # Free, 1000 req/day — get one at https://www.domcop.com/openpagerank/
 
 TARGET_DOMAIN=            # e.g. https://yoursite.com
 REDIS_URL=redis://localhost:6379  # Optional, falls back to diskcache
@@ -102,11 +100,17 @@ class KeywordData(TypedDict):
     serp_features: SERPFeatures    # What SERP features exist for this keyword
     on_page_issues: list[str]
     missing_topics: list[str]
-    backlink_gap: list[str]        # Domains linking to competitors but not you
-    internal_link_score: float     # 0.0 – 1.0
+    backlink_gap: list[BacklinkGap]  # Domains linking to competitor URLs but not yours, scored by OPR
+    internal_link_score: float       # 0.0 – 1.0
     internal_link_issues: list[str]
     page_speed: dict | None        # Core Web Vitals from PageSpeed API
     raw_competitor_data: list[dict]
+
+class BacklinkGap(TypedDict):
+    source_domain: str             # The site mentioning/linking to a competitor URL
+    opr_score: float               # OpenPageRank 0.0 – 10.0 (higher = more authoritative)
+    links_to_competitors: list[str]  # Which competitor URLs this domain references
+    links_to_you: bool             # Always False — you're never in the gap, but kept for shape stability
 
 class SEOAgentState(TypedDict):
     target_domain: str
@@ -283,17 +287,31 @@ Also calls **Google PageSpeed Insights API** (`tools/pagespeed.py`) to get real 
 
 ---
 
-### Node 4 — `find_backlink_gaps`
+### Node 4 — `find_backlink_gaps` (URL-level, free APIs only)
 
 **File:** `tools/backlinks.py`
 
-**What it does:**
-- Calls Moz or Ahrefs API to fetch the backlink profiles of top 3 competitors
-- Fetches your own backlink profile
-- Finds domains linking to 2+ competitors but NOT linking to you
-- Sorts by domain authority (highest first)
+**Concept:** This is **URL-level**, not domain-level. For each keyword we look at the specific pages ranking on top (the competitor URLs from Node 1) and find external pages that mention/link to those exact URLs. The "gap" is: source domains that reference competitor URLs but not the user's ranking URL.
 
-**Output:** List of high-authority domains you should target for backlinks.
+**Sources (no paid API):**
+1. **SerpAPI** (already in stack) — query Google with `"<exact-url>" -site:<that-url's-domain>` to surface external pages that mention or link to that specific URL.
+2. **OpenPageRank** — free API (1000 req/day), batches up to 100 domains per call, returns a 0–10 PageRank-style score used to rank discovered linking domains by authority.
+
+**What it does, per keyword:**
+1. Collect all ranking URLs for the keyword: the user's `your_url` (if ranking) and every URL in `top_competitors`.
+2. For each ranking URL, run a SerpAPI query `"<url>" -site:<domain>` and extract the source domains from the result `link` fields. Cache per URL (24h).
+3. Build:
+   - `your_linkers` = source domains pointing at `your_url`
+   - `competitor_linkers[comp_url]` = source domains pointing at each competitor URL
+4. Gap = `(union of competitor_linkers) − your_linkers`. Track *which* competitor URLs each gap domain references (so we can show "links to 2 of top 3 competitors").
+5. Batch-call OpenPageRank for every gap domain. Cache per domain (7d, scores are stable).
+6. Sort by `(links_to_competitors_count desc, opr_score desc)`. Return top 20 as `list[BacklinkGap]`.
+
+**Output:** List of source domains worth pursuing for outreach, each with OPR score and the competitor URLs they already reference.
+
+**Caveats made explicit in the report:**
+- SerpAPI returns ~100 results per query, so this finds the *most visible* linking pages, not an exhaustive backlink index. That's the honest tradeoff for going free.
+- A "linker" here means *Google indexes a page that contains the exact URL string* — usually a real link, sometimes just a citation/mention. Both are useful for outreach.
 
 ---
 
@@ -458,7 +476,7 @@ def cached_call(fn, *args, ttl_hours=24, **kwargs):
     return result
 ```
 
-Cache all: SerpAPI calls, competitor page scrapes, Moz/Ahrefs API calls, PageSpeed API calls.
+Cache all: SerpAPI calls (rankings + per-URL backlink discovery), competitor page scrapes, OpenPageRank scores (7d TTL), PageSpeed API calls.
 Do NOT cache: the LLM synthesis step (always regenerate the report).
 
 ---
@@ -619,8 +637,9 @@ Build and test in this order — each step is independently testable:
 ## Notes and Constraints
 
 - Respect `robots.txt` on competitor scraping — enforced via `tools/robots_check.py`
-- SerpAPI free tier: 100 searches/month. For production use, budget ~$50/month for the basic plan
-- Moz free tier: 10 requests/10 seconds. For more volume, use Ahrefs ($99/month) or SEMrush API
+- SerpAPI free tier: 100 searches/month. Backlink discovery uses 1 SerpAPI call per ranking URL per keyword (≈ 1 + MAX_COMPETITORS calls per keyword *just for backlinks*), so budget accordingly — for production use, the basic plan (~$50/month) is recommended.
+- OpenPageRank free tier: 1000 requests/day, batches up to 100 domains per call. Plenty for the agent's use; per-domain caching (7d) keeps usage low.
+- No paid backlink API (Moz/Ahrefs/Majestic) is required or supported in this MVP. Backlink discovery is search-derived via SerpAPI.
 - Do not run more than 3 concurrent scraping requests to avoid IP bans (enforced via asyncio.Semaphore)
 - The agent is keyword-level, not page-level — it analyses the best-ranking page for each keyword, not the entire site
 - For domains not ranking in top 100, the agent should still run the competitor and content gap analysis using the homepage or the most relevant page (passed manually or auto-detected)
