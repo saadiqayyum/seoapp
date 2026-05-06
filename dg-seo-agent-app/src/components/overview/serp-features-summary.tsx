@@ -12,15 +12,23 @@ import {
 
 interface SerpFeaturesSummaryProps {
   data: { feature: string; count: number }[];
+  totalKeywords: number;
 }
 
-export function SerpFeaturesSummary({ data }: SerpFeaturesSummaryProps) {
+export function SerpFeaturesSummary({
+  data,
+  totalKeywords,
+}: SerpFeaturesSummaryProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">
           SERP Features Detected
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Special Google result types appearing for your {totalKeywords} keyword
+          {totalKeywords === 1 ? "" : "s"}
+        </p>
       </CardHeader>
       <CardContent>
         <div className="h-[200px] w-full">

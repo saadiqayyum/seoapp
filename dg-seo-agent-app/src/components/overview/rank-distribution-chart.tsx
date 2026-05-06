@@ -48,6 +48,10 @@ export function RankDistributionChart({
         <CardTitle className="text-sm font-medium">
           Rank Distribution
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Where each of your {keywords.length} keyword
+          {keywords.length === 1 ? "" : "s"} currently rank{keywords.length === 1 ? "s" : ""} on Google
+        </p>
       </CardHeader>
       <CardContent>
         <div className="h-[200px] w-full">

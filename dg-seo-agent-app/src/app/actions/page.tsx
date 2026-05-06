@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { getSignedInUserState } from "@/lib/data";
+import { getAggregatedKeywordsForDomain } from "@/lib/audits";
 import { EmptyState } from "@/components/layout/empty-state";
 import { computeActionItems } from "@/lib/computations";
 import { ActionItemsList } from "@/components/actions/action-items-list";
@@ -13,8 +14,9 @@ export default async function ActionsPage() {
     return <EmptyState state="no-audit" domainLabel={state.domain.label} />;
   if (state.state === "unauthenticated") return null;
 
-  const { report } = state.ctx;
-  const actionItems = computeActionItems(report.keywords);
+  const { domain, user } = state.ctx;
+  const keywords = await getAggregatedKeywordsForDomain(user.userId, domain.id);
+  const actionItems = computeActionItems(keywords);
 
   const highCount = actionItems.filter((i) => i.priority === "high").length;
   const medCount = actionItems.filter((i) => i.priority === "medium").length;

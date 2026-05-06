@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { getSignedInUserState } from "@/lib/data";
+import { getAggregatedKeywordsForDomain } from "@/lib/audits";
 import { RankPositionBadge } from "@/components/keyword-detail/rank-position-badge";
 import { SerpFeaturesIcons } from "@/components/keyword-detail/serp-features-icons";
 import { KeywordDetailTabs } from "./keyword-detail-tabs";
@@ -18,8 +19,9 @@ export default async function KeywordDetailPage({
   if (state.state === "unauthenticated") redirect("/login");
   if (state.state === "no-domain" || state.state === "no-audit") redirect("/");
 
-  const { report } = state.ctx;
-  const kw = report.keywords.find((k) => k.keyword === keyword);
+  const { domain, user } = state.ctx;
+  const keywords = await getAggregatedKeywordsForDomain(user.userId, domain.id);
+  const kw = keywords.find((k) => k.keyword === keyword);
   if (!kw) return notFound();
 
   return (

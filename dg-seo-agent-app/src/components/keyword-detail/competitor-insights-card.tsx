@@ -1,12 +1,42 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Target } from "lucide-react";
-import type { CompetitorInsight } from "@/lib/types";
-import { INSIGHT_CATEGORY_LABELS, PRIORITY_COLORS } from "@/lib/constants";
+import { CheckCircle, Target, ArrowRight, Lightbulb } from "lucide-react";
+import type { CompetitorInsight, InsightSeverity } from "@/lib/types";
+import { INSIGHT_CATEGORY_LABELS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface CompetitorInsightsCardProps {
   insights: CompetitorInsight[];
 }
+
+const SEVERITY_STYLES: Record<
+  InsightSeverity,
+  { stripe: string; dot: string; label: string; rank: number }
+> = {
+  high: {
+    stripe: "before:bg-red-500 dark:before:bg-red-400",
+    dot: "bg-red-500 dark:bg-red-400",
+    label: "text-red-700 dark:text-red-300",
+    rank: 0,
+  },
+  medium: {
+    stripe: "before:bg-amber-500 dark:before:bg-amber-400",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    label: "text-amber-700 dark:text-amber-300",
+    rank: 1,
+  },
+  low: {
+    stripe: "before:bg-muted-foreground/40",
+    dot: "bg-muted-foreground/60",
+    label: "text-muted-foreground",
+    rank: 2,
+  },
+};
 
 export function CompetitorInsightsCard({
   insights,
@@ -32,6 +62,10 @@ export function CompetitorInsightsCard({
     );
   }
 
+  const sorted = [...insights].sort(
+    (a, b) => SEVERITY_STYLES[a.severity].rank - SEVERITY_STYLES[b.severity].rank,
+  );
+
   const counts = {
     high: insights.filter((i) => i.severity === "high").length,
     medium: insights.filter((i) => i.severity === "medium").length,
@@ -41,41 +75,21 @@ export function CompetitorInsightsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-sm font-medium">
+        <CardTitle className="flex items-center justify-between gap-3 text-sm font-medium">
           <span className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Competitor-Grounded Insights
           </span>
-          <div className="flex gap-1.5">
-            {counts.high > 0 && (
-              <Badge
-                variant="secondary"
-                className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-              >
-                {counts.high} high
-              </Badge>
-            )}
-            {counts.medium > 0 && (
-              <Badge
-                variant="secondary"
-                className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300"
-              >
-                {counts.medium} medium
-              </Badge>
-            )}
-            {counts.low > 0 && (
-              <Badge variant="outline">{counts.low} low</Badge>
-            )}
-          </div>
+          <SeveritySummary counts={counts} />
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-4 text-xs text-muted-foreground">
+        <p className="mb-5 text-xs text-muted-foreground">
           Structural deltas derived from scraping the top-ranking pages. Every
           recommendation cites per-competitor measurements.
         </p>
         <div className="space-y-3">
-          {insights.map((insight, i) => (
+          {sorted.map((insight, i) => (
             <InsightRow key={`${insight.category}-${i}`} insight={insight} />
           ))}
         </div>
@@ -84,70 +98,103 @@ export function CompetitorInsightsCard({
   );
 }
 
-function InsightRow({ insight }: { insight: CompetitorInsight }) {
+function SeveritySummary({
+  counts,
+}: {
+  counts: { high: number; medium: number; low: number };
+}) {
   return (
-    <div className="rounded-lg border bg-card/30 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {INSIGHT_CATEGORY_LABELS[insight.category] ?? insight.category}
-            </span>
-            <Badge
-              variant="secondary"
-              className={PRIORITY_COLORS[insight.severity]}
-            >
-              {insight.severity}
-            </Badge>
-          </div>
-          <p className="text-sm font-medium leading-snug">
-            {insight.observation}
-          </p>
+    <div className="flex items-center gap-3 text-[11px] font-medium tabular-nums">
+      {counts.high > 0 && (
+        <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500 dark:bg-red-400" />
+          {counts.high} high
+        </span>
+      )}
+      {counts.medium > 0 && (
+        <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+          {counts.medium} medium
+        </span>
+      )}
+      {counts.low > 0 && (
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" />
+          {counts.low} low
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InsightRow({ insight }: { insight: CompetitorInsight }) {
+  const sev = SEVERITY_STYLES[insight.severity];
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg border bg-card pl-5 pr-4 py-4",
+        "before:absolute before:left-0 before:top-0 before:h-full before:w-1",
+        sev.stripe,
+      )}
+    >
+      {/* Header row: category label + severity */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-foreground/70">
+          {INSIGHT_CATEGORY_LABELS[insight.category] ?? insight.category}
+        </span>
+        <span className={cn("flex items-center gap-1.5 text-[11px] font-semibold", sev.label)}>
+          <span className={cn("h-1.5 w-1.5 rounded-full", sev.dot)} />
+          {insight.severity}
+        </span>
+      </div>
+
+      {/* Observation — primary statement */}
+      <p className="mt-1.5 text-[15px] font-medium leading-snug text-foreground">
+        {insight.observation}
+      </p>
+
+      {/* You vs competitors — inline metric comparison */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            You
+          </span>
+          <span className="font-semibold tabular-nums">{insight.your_value}</span>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            Competitors
+          </span>
+          <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+            {insight.competitor_avg}
+          </span>
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-        <div className="rounded-md bg-red-50 px-2.5 py-1.5 dark:bg-red-950/40">
-          <span className="font-medium text-muted-foreground">You:</span>{" "}
-          <span className="font-semibold">{insight.your_value}</span>
-        </div>
-        <div className="rounded-md bg-emerald-50 px-2.5 py-1.5 dark:bg-emerald-950/40">
-          <span className="font-medium text-muted-foreground">
-            Competitors:
-          </span>{" "}
-          <span className="font-semibold">{insight.competitor_avg}</span>
-        </div>
-      </div>
-
-      <div className="mt-3 rounded-md bg-muted/40 px-3 py-2">
-        <p className="text-xs font-medium text-muted-foreground">
-          Recommendation
-        </p>
-        <p className="mt-0.5 text-sm leading-relaxed">
+      {/* Recommendation — primary callout */}
+      <div className="mt-3 flex gap-2.5 rounded-md border border-primary/15 bg-primary/5 px-3 py-2.5">
+        <Lightbulb className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+        <p className="text-sm leading-relaxed text-foreground">
           {insight.recommendation}
         </p>
       </div>
 
+      {/* Per-competitor evidence — quiet inline list */}
       {insight.evidence.length > 0 && (
-        <div className="mt-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Per-competitor evidence
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {insight.evidence.map((e) => (
-              <Badge
-                key={e.competitor_url}
-                variant="outline"
-                className="font-normal"
-              >
-                <span className="text-muted-foreground">
-                  {e.competitor_domain}
-                </span>
-                <span className="mx-1.5 text-muted-foreground/60">·</span>
-                <span>{e.value}</span>
-              </Badge>
-            ))}
-          </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.08em]">
+            Evidence
+          </span>
+          {insight.evidence.map((e, i) => (
+            <span key={e.competitor_url} className="flex items-center gap-1">
+              {i > 0 && <span className="text-muted-foreground/40">·</span>}
+              <span className="text-foreground/80">{e.competitor_domain}</span>
+              <span className="font-mono tabular-nums text-foreground">
+                {e.value}
+              </span>
+            </span>
+          ))}
         </div>
       )}
     </div>

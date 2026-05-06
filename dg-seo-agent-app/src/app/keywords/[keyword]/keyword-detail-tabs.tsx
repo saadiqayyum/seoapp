@@ -143,7 +143,11 @@ export function KeywordDetailTabs({ keyword: kw }: KeywordDetailTabsProps) {
 
       <TabsContent value="content" className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-2">
-          <WordCountChart competitors={kw.raw_competitor_data} />
+          <WordCountChart
+            competitors={kw.raw_competitor_data}
+            yourWordCount={kw.your_page_data?.word_count}
+            yourUrl={kw.your_url}
+          />
           <HeadingComparison competitors={kw.raw_competitor_data} />
         </div>
         <ContentGapsCard topics={kw.missing_topics} />

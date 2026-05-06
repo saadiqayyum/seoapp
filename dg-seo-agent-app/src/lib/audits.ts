@@ -1,7 +1,7 @@
 import { audits, AuditDoc, AuditStatus, ObjectId } from "./db";
 import { getAssistantId, runAgent, toReportData } from "./agent-client";
 import { getDomain } from "./domains";
-import type { ReportData } from "./types";
+import type { KeywordData, ReportData } from "./types";
 
 export interface AuditSummary {
   id: string;
@@ -58,6 +58,78 @@ export async function getAuditDetail(
   });
   if (!doc) return null;
   return { ...summarize(doc), report: doc.report };
+}
+
+export interface DomainOverview {
+  keywords: KeywordData[];          // deduped, newest entry per keyword
+  totalAudits: number;              // count of completed audits for this domain
+  lastCompletedAt: string | null;   // ISO date of the most recent completed audit
+}
+
+/**
+ * Single fetcher for the overview dashboard. Combines aggregated keyword data
+ * with audit-level metadata so the dashboard header can show the user exactly
+ * what scope the page is summarizing (e.g. "Across 12 keywords from 4 audits").
+ */
+export async function getDomainOverview(
+  userId: string,
+  domainId: string,
+): Promise<DomainOverview> {
+  const col = await audits();
+  const docs = await col
+    .find({
+      userId: new ObjectId(userId),
+      domainId: new ObjectId(domainId),
+      status: "complete",
+    })
+    .sort({ completedAt: -1 })
+    .toArray();
+
+  const seen = new Map<string, KeywordData>();
+  for (const doc of docs) {
+    if (!doc.report) continue;
+    for (const kw of doc.report.keywords) {
+      if (!seen.has(kw.keyword)) seen.set(kw.keyword, kw);
+    }
+  }
+
+  return {
+    keywords: Array.from(seen.values()),
+    totalAudits: docs.length,
+    lastCompletedAt: docs[0]?.completedAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * Aggregate keyword data across every completed audit for a domain.
+ *
+ * Each audit doc is one run with its own keyword set. The /keywords page
+ * needs the union of keywords ever audited for a domain — deduped, with the
+ * newest entry per keyword winning so the displayed metrics reflect the most
+ * recent run that touched that keyword.
+ */
+export async function getAggregatedKeywordsForDomain(
+  userId: string,
+  domainId: string,
+): Promise<KeywordData[]> {
+  const col = await audits();
+  const docs = await col
+    .find({
+      userId: new ObjectId(userId),
+      domainId: new ObjectId(domainId),
+      status: "complete",
+    })
+    .sort({ completedAt: -1 })
+    .toArray();
+
+  const seen = new Map<string, KeywordData>();
+  for (const doc of docs) {
+    if (!doc.report) continue;
+    for (const kw of doc.report.keywords) {
+      if (!seen.has(kw.keyword)) seen.set(kw.keyword, kw);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 export async function getLatestCompleteAudit(

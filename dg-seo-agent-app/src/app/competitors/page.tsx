@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Users, Trophy, Target } from "lucide-react";
 import { getSignedInUserState } from "@/lib/data";
+import { getAggregatedKeywordsForDomain } from "@/lib/audits";
 import { EmptyState } from "@/components/layout/empty-state";
 import { aggregateCompetitors } from "@/lib/computations";
 import { CompetitorFrequencyChart } from "@/components/competitors/competitor-frequency-chart";
@@ -22,8 +23,9 @@ export default async function CompetitorsPage() {
     return <EmptyState state="no-audit" domainLabel={state.domain.label} />;
   if (state.state === "unauthenticated") return null;
 
-  const { report } = state.ctx;
-  const competitors = aggregateCompetitors(report.keywords);
+  const { domain, user } = state.ctx;
+  const keywords = await getAggregatedKeywordsForDomain(user.userId, domain.id);
+  const competitors = aggregateCompetitors(keywords);
   const multiKeywordCompetitors = competitors.filter((c) => c.count >= 2);
 
   return (

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight, Minus } from "lucide-react";
 import { getSignedInUserState } from "@/lib/data";
+import { getAggregatedKeywordsForDomain } from "@/lib/audits";
 import { EmptyState } from "@/components/layout/empty-state";
 import { getRankColor, getSpeedColor } from "@/lib/constants";
 
@@ -23,7 +24,8 @@ export default async function KeywordsPage() {
     return <EmptyState state="no-audit" domainLabel={state.domain.label} />;
   if (state.state === "unauthenticated") return null;
 
-  const { report, domain } = state.ctx;
+  const { domain, user } = state.ctx;
+  const keywords = await getAggregatedKeywordsForDomain(user.userId, domain.id);
 
   return (
     <>
@@ -37,7 +39,7 @@ export default async function KeywordsPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Keywords</h2>
           <p className="text-muted-foreground">
-            {report.keywords.length} keywords tracked for{" "}
+            {keywords.length} keywords tracked for{" "}
             <span className="font-medium text-foreground">{domain.label}</span>
           </p>
         </div>
@@ -62,7 +64,7 @@ export default async function KeywordsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {report.keywords.map((kw) => (
+                  {keywords.map((kw) => (
                     <TableRow key={kw.keyword}>
                       <TableCell>
                         <Link
