@@ -43,10 +43,31 @@ const accountNav = [
   { title: "Domains", href: "/domains", icon: Globe },
 ];
 
+/**
+ * Returns the href of the nav item that best matches the current pathname:
+ * the longest prefix wins, so `/audits/new` beats `/audits` when the user
+ * is on the New Audit page. `/` only matches the root pathname exactly.
+ */
+function pickActiveHref(pathname: string, hrefs: string[]): string | null {
+  let best: string | null = null;
+  for (const href of hrefs) {
+    const matches =
+      href === "/"
+        ? pathname === "/"
+        : pathname === href || pathname.startsWith(href + "/");
+    if (matches && (!best || href.length > best.length)) best = href;
+  }
+  return best;
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const activeHref = pickActiveHref(
+    pathname,
+    [...auditNav, ...accountNav].map((i) => i.href),
+  );
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -75,10 +96,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {auditNav.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
+                const isActive = item.href === activeHref;
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -102,7 +120,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {accountNav.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = item.href === activeHref;
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

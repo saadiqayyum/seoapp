@@ -6,6 +6,12 @@ const GRAPH_ID = process.env.AGENT_GRAPH_ID ?? "seo_agent";
 
 const POLL_INTERVAL_MS = 5_000;
 const POLL_TIMEOUT_MS = 15 * 60 * 1_000; // 15 min max
+// Treat short bursts of gateway errors as transient. Cold-starts and proxy
+// hiccups on the deployed LangGraph runtime will routinely produce a 502/503
+// for a few seconds. We only abort the audit when the backend stays
+// unreachable for a sustained window.
+const TRANSIENT_FAILURE_LIMIT = 12; // ~60s of consecutive 502/503/504/network errors
+const POLL_REQUEST_TIMEOUT_MS = 30_000;
 
 function agentHeaders(): HeadersInit {
   const h: HeadersInit = { "Content-Type": "application/json" };
@@ -75,18 +81,74 @@ async function startRun(input: AgentInput): Promise<string> {
   return data.id;
 }
 
-/** Poll GET /runs/{id} until completed or failed. */
+function isTransientStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 504 || status === 408;
+}
+
+async function fetchRunStatus(runId: string): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), POLL_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(`${AGENT_BASE_URL}/runs/${runId}`, {
+      headers: agentHeaders(),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Poll GET /runs/{id} until completed or failed.
+ *
+ * Tolerates transient gateway/network failures: 502/503/504/408 responses and
+ * fetch network errors are retried up to TRANSIENT_FAILURE_LIMIT consecutive
+ * polls before the run is declared failed. This survives backend cold-starts
+ * and brief proxy outages without aborting long-running audits.
+ */
 async function pollRun(runId: string): Promise<AgentOutput> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
+  let consecutiveTransient = 0;
+  let lastTransientReason: string | null = null;
+
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    const res = await fetch(`${AGENT_BASE_URL}/runs/${runId}`, {
-      headers: agentHeaders(),
-    });
-    if (!res.ok) throw new Error(`GET /runs/${runId} failed ${res.status}`);
+
+    let res: Response;
+    try {
+      res = await fetchRunStatus(runId);
+    } catch (err) {
+      // Network failure (DNS, connection reset, abort, etc.) — treat as transient.
+      consecutiveTransient++;
+      lastTransientReason = err instanceof Error ? err.message : String(err);
+      if (consecutiveTransient >= TRANSIENT_FAILURE_LIMIT) {
+        throw new Error(
+          `Agent unreachable: ${lastTransientReason} (after ${consecutiveTransient} retries)`,
+        );
+      }
+      continue;
+    }
+
+    if (isTransientStatus(res.status)) {
+      consecutiveTransient++;
+      lastTransientReason = `${res.status} ${res.statusText || "gateway error"}`;
+      if (consecutiveTransient >= TRANSIENT_FAILURE_LIMIT) {
+        throw new Error(
+          `Agent unreachable: ${lastTransientReason} (after ${consecutiveTransient} retries). The agent backend appears to be down.`,
+        );
+      }
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(`GET /runs/${runId} failed ${res.status} ${res.statusText}`);
+    }
+
+    consecutiveTransient = 0;
     const data = (await res.json()) as OrkestRunResponse;
     if (data.status === "completed") {
-      if (!data.output_data) throw new Error(`Run ${runId} completed but output_data is null`);
+      if (!data.output_data) {
+        throw new Error(`Run ${runId} completed but output_data is null`);
+      }
       return data.output_data;
     }
     if (data.status === "failed") {
