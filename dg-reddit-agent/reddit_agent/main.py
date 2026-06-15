@@ -46,6 +46,9 @@ def run(
     initial_state: RedditAgentState = {
         "keywords": keywords,
         "max_threads_per_keyword": max_threads,
+        "personas": [],
+        "reddit_bearer_token": "",
+        "exclude_thread_ids": [],
         "results": [],
         "final_report": None,
         "errors": [],
