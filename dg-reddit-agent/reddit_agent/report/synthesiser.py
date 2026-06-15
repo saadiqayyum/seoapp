@@ -35,6 +35,13 @@ def _format_thread(thread: ThreadData) -> str:
     parts = [f"### [{title}]({url})"]
     parts.append(f"r/{sub} · {score} upvotes · {ncom} comments")
 
+    if thread.get("assigned_user_name"):
+        reason = thread.get("assignment_reason", "")
+        line = f"\n**Assigned to:** {thread['assigned_user_name']}"
+        if reason:
+            line += f" — {reason}"
+        parts.append(line)
+
     if thread.get("summary"):
         parts.append(f"\n**Summary:** {thread['summary']}")
     if thread.get("relevance"):

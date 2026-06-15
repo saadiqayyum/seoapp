@@ -11,6 +11,18 @@ class ThreadComment(TypedDict):
     score: int
 
 
+class Persona(TypedDict):
+    """A dummy user the agent can assign threads to, based on their expertise."""
+
+    id: str                 # stable slug (matches the frontend user id)
+    name: str
+    role: str
+    expertise: list[str]
+    subreddits: list[str]
+    tone: str
+    bio: str
+
+
 class ThreadData(TypedDict):
     """All collected data for a single Reddit thread."""
 
@@ -34,12 +46,20 @@ class ThreadData(TypedDict):
     talking_points: list[str]
     tone: str               # helpful | educational | clarification
 
+    # Assignment (filled by assign_threads node)
+    assigned_user_id: str
+    assigned_user_name: str
+    assignment_reason: str
+
 
 class RedditAgentState(TypedDict):
     """Top-level state passed through the LangGraph pipeline."""
 
     keywords: list[str]
     max_threads_per_keyword: int
+    personas: list[Persona]
+    reddit_bearer_token: str  # per-run Reddit bearer token (expires ~24h); "" -> use env/anon
+    exclude_thread_ids: list[str]  # thread ids already shown for these keywords (skip them)
     results: list[ThreadData]
     final_report: str | None
     errors: list[str]

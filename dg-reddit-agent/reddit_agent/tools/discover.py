@@ -17,11 +17,12 @@ from reddit_agent.state import ThreadData
 logger = logging.getLogger(__name__)
 
 
-def _fetch_serp(query: str, api_key: str, num: int) -> dict:
-    """Raw SerpAPI Google call — this is the function we cache."""
+def _fetch_serp(query: str, api_key: str, num: int, start: int = 0) -> dict:
+    """Raw SerpAPI Google call — this is the function we cache (per page via `start`)."""
     params = {
         "q": query,
         "num": num,
+        "start": start,
         "api_key": api_key,
         "engine": "google",
     }
@@ -50,29 +51,51 @@ def _skeleton(keyword: str, thread_id: str, subreddit: str, result: dict) -> Thr
         "suggested_reply": "",
         "talking_points": [],
         "tone": "",
+        "assigned_user_id": "",
+        "assigned_user_name": "",
+        "assignment_reason": "",
     }
 
 
-def discover_for_keyword(keyword: str, max_threads: int) -> list[ThreadData]:
-    """Search Google (via SerpAPI) for reddit threads matching a keyword."""
+# Google pagination: walk up to MAX_PAGES of PAGE_SIZE results, skipping threads in
+# `exclude`, until we've collected `max_threads` unseen ones. This is what lets a
+# repeated keyword surface the NEXT batch instead of the same threads every time.
+PAGE_SIZE = 10
+MAX_PAGES = 5  # ~50 Google results — plenty of headroom over max_threads
+
+
+def discover_for_keyword(
+    keyword: str, max_threads: int, exclude: set[str]
+) -> list[ThreadData]:
+    """Search Google (via SerpAPI) for reddit threads matching a keyword.
+
+    Paginates and skips any thread_id in `exclude`, returning up to `max_threads`
+    threads not seen before.
+    """
     query = f"site:reddit.com {keyword}"
-    # Ask for a few extra results since non-thread reddit links get filtered out.
-    num = min(max(max_threads * 2, 10), 50)
-    data = cached_call(_fetch_serp, query, settings.serpapi_key, num)
-
-    results = data.get("organic_results", []) or []
     threads: list[ThreadData] = []
-    for result in results:
-        url = result.get("link", "") or ""
-        parsed = parse_thread_url(url)
-        if not parsed:
-            continue
-        subreddit, thread_id = parsed
-        threads.append(_skeleton(keyword, thread_id, subreddit, result))
-        if len(threads) >= max_threads:
-            break
+    picked: set[str] = set()
 
-    logger.info("Keyword '%s': %d reddit threads from Google", keyword, len(threads))
+    for page in range(MAX_PAGES):
+        data = cached_call(_fetch_serp, query, settings.serpapi_key, PAGE_SIZE, page * PAGE_SIZE)
+        results = data.get("organic_results", []) or []
+        if not results:
+            break  # no more Google results for this keyword
+        for result in results:
+            url = result.get("link", "") or ""
+            parsed = parse_thread_url(url)
+            if not parsed:
+                continue
+            subreddit, thread_id = parsed
+            if thread_id in exclude or thread_id in picked:
+                continue
+            picked.add(thread_id)
+            threads.append(_skeleton(keyword, thread_id, subreddit, result))
+            if len(threads) >= max_threads:
+                logger.info("Keyword '%s': %d new reddit threads from Google", keyword, len(threads))
+                return threads
+
+    logger.info("Keyword '%s': %d new reddit threads from Google", keyword, len(threads))
     return threads
 
 
@@ -87,7 +110,10 @@ def discover_threads_node(state: dict) -> dict:
     results: list[ThreadData] = state.get("results", [])
     errors: list[str] = state.get("errors", [])
 
+    # Seed `seen` with threads already shown for these keywords (passed in run params)
+    # plus anything already in results — so repeated runs surface fresh threads.
     seen: set[str] = {t["thread_id"] for t in results}
+    seen |= set(state.get("exclude_thread_ids") or [])
 
     if not settings.serpapi_key:
         errors.append("[discover] SERPAPI_KEY not configured")
@@ -95,7 +121,7 @@ def discover_threads_node(state: dict) -> dict:
 
     for keyword in keywords:
         try:
-            for thread in discover_for_keyword(keyword, max_threads):
+            for thread in discover_for_keyword(keyword, max_threads, seen):
                 if thread["thread_id"] in seen:
                     continue
                 seen.add(thread["thread_id"])
