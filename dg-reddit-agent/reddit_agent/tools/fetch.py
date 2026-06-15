@@ -16,13 +16,18 @@ def fetch_threads_node(state: dict) -> dict:
     """
     results = state.get("results", [])
     errors = state.get("errors", [])
+    bearer_token = state.get("reddit_bearer_token") or None
 
     for thread in results:
         url = thread.get("url")
         if not url:
             continue
         try:
-            post = fetch_thread(url, comment_limit=settings.max_comments_per_thread)
+            post = fetch_thread(
+                url,
+                comment_limit=settings.max_comments_per_thread,
+                bearer_token=bearer_token,
+            )
             thread["selftext"] = post.get("selftext", "")
             thread["author"] = post.get("author", "") or thread.get("author", "")
             thread["score"] = post.get("score", 0)

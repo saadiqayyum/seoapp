@@ -41,10 +41,12 @@ def parse_thread_url(url: str) -> tuple[str, str] | None:
     return m.group(1), m.group(2).lower()
 
 
-def _headers() -> dict[str, str]:
+def _headers(bearer_token: str | None = None) -> dict[str, str]:
+    # Prefer a per-run token (passed in run params, rotated from the UI); fall back to env.
+    token = bearer_token or settings.reddit_bearer_token
     headers = {"User-Agent": settings.reddit_user_agent}
-    if settings.reddit_bearer_token:
-        headers["Authorization"] = f"Bearer {settings.reddit_bearer_token}"
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
@@ -54,7 +56,7 @@ def _permalink_json_url(url: str) -> str:
     return f"{PUBLIC_BASE}{path}.json?raw_json=1&limit={settings.max_comments_per_thread}&depth=1"
 
 
-def fetch_thread(url: str, comment_limit: int | None = None) -> dict:
+def fetch_thread(url: str, comment_limit: int | None = None, bearer_token: str | None = None) -> dict:
     """Fetch a thread's post fields + top-level comments.
 
     Returns a dict:
@@ -74,7 +76,7 @@ def fetch_thread(url: str, comment_limit: int | None = None) -> dict:
         comment_limit = settings.max_comments_per_thread
 
     try:
-        res = requests.get(_permalink_json_url(url), headers=_headers(), timeout=30)
+        res = requests.get(_permalink_json_url(url), headers=_headers(bearer_token), timeout=30)
     except requests.RequestException as e:
         raise RedditFetchError(f"network error: {e}") from e
     finally:
