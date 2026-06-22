@@ -17,7 +17,10 @@ from reddit_agent.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Anonymous reads use www.reddit.com; a logged-in Bearer token is ONLY accepted on
+# the oauth.reddit.com API host (www.reddit.com 403s bearer requests).
 PUBLIC_BASE = "https://www.reddit.com"
+OAUTH_BASE = "https://oauth.reddit.com"
 REQUEST_DELAY_S = 1.0  # Reddit is strict about rate limits.
 SELFTEXT_CAP = 2000
 
@@ -41,19 +44,22 @@ def parse_thread_url(url: str) -> tuple[str, str] | None:
     return m.group(1), m.group(2).lower()
 
 
-def _headers(bearer_token: str | None = None) -> dict[str, str]:
-    # Prefer a per-run token (passed in run params, rotated from the UI); fall back to env.
-    token = bearer_token or settings.reddit_bearer_token
+def _headers(token: str | None) -> dict[str, str]:
     headers = {"User-Agent": settings.reddit_user_agent}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
-def _permalink_json_url(url: str) -> str:
-    """Turn a reddit thread URL into its `.json` endpoint on www.reddit.com."""
+def _permalink_json_url(url: str, authenticated: bool) -> str:
+    """Turn a reddit thread URL into its `.json` endpoint.
+
+    Uses oauth.reddit.com when a Bearer token will be sent (the only host that
+    accepts it), otherwise the public www.reddit.com host.
+    """
+    base = OAUTH_BASE if authenticated else PUBLIC_BASE
     path = urlparse(url).path.rstrip("/")
-    return f"{PUBLIC_BASE}{path}.json?raw_json=1&limit={settings.max_comments_per_thread}&depth=1"
+    return f"{base}{path}.json?raw_json=1&limit={settings.max_comments_per_thread}&depth=1"
 
 
 def fetch_thread(url: str, comment_limit: int | None = None, bearer_token: str | None = None) -> dict:
@@ -75,8 +81,14 @@ def fetch_thread(url: str, comment_limit: int | None = None, bearer_token: str |
     if comment_limit is None:
         comment_limit = settings.max_comments_per_thread
 
+    # Prefer a per-run token (passed in run params, rotated from the UI); fall back to env.
+    token = bearer_token or settings.reddit_bearer_token
     try:
-        res = requests.get(_permalink_json_url(url), headers=_headers(bearer_token), timeout=30)
+        res = requests.get(
+            _permalink_json_url(url, bool(token)),
+            headers=_headers(token),
+            timeout=30,
+        )
     except requests.RequestException as e:
         raise RedditFetchError(f"network error: {e}") from e
     finally:

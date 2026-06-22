@@ -49,6 +49,7 @@ def run(
         "personas": [],
         "reddit_bearer_token": "",
         "exclude_thread_ids": [],
+        "instructions": "",
         "results": [],
         "final_report": None,
         "errors": [],

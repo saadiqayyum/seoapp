@@ -12,14 +12,12 @@ class ThreadComment(TypedDict):
 
 
 class Persona(TypedDict):
-    """A dummy user the agent can assign threads to, based on their expertise."""
+    """A user the agent can assign threads to. The bio is the rich matching signal
+    (it describes their expertise/focus); tone is a list of reply-tone hints."""
 
-    id: str                 # stable slug (matches the frontend user id)
+    id: str                 # matches the frontend user id (Mongo ObjectId string)
     name: str
-    role: str
-    expertise: list[str]
-    subreddits: list[str]
-    tone: str
+    tone: list[str]
     bio: str
 
 
@@ -60,6 +58,7 @@ class RedditAgentState(TypedDict):
     personas: list[Persona]
     reddit_bearer_token: str  # per-run Reddit bearer token (expires ~24h); "" -> use env/anon
     exclude_thread_ids: list[str]  # thread ids already shown for these keywords (skip them)
+    instructions: str  # admin-set "## Your task" prompt for analyze; "" -> built-in default
     results: list[ThreadData]
     final_report: str | None
     errors: list[str]

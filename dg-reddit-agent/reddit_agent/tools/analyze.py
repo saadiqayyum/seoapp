@@ -41,9 +41,7 @@ Top comments:
 {comments}
 
 ## Your task
-Decide how relevant this thread is to someone helping with the keyword above, and draft a
-genuinely helpful Reddit reply. The reply must add real value first; only mention Design
-Gurus where it naturally fits as a resource (never spammy, never if off-topic).
+{instructions}
 
 Return ONLY a JSON object (no markdown fences, no prose) with these exact keys:
 {{
@@ -54,6 +52,15 @@ Return ONLY a JSON object (no markdown fences, no prose) with these exact keys:
   "tone": "one of: helpful | educational | clarification"
 }}
 """
+
+# Default "task" instructions — used when the run doesn't supply a custom prompt.
+# The admin can override just this part from the web app (the thread block + JSON
+# contract above/below stay fixed so parsing never breaks).
+DEFAULT_INSTRUCTIONS = (
+    "Decide how relevant this thread is to someone helping with the keyword above, and draft a "
+    "genuinely helpful Reddit reply. The reply must add real value first; only mention Design "
+    "Gurus where it naturally fits as a resource (never spammy, never if off-topic)."
+)
 
 
 def _get_client() -> genai.Client:
@@ -89,8 +96,12 @@ def _parse_json(text: str) -> dict | None:
         return None
 
 
-def analyze_thread(thread: ThreadData) -> dict:
-    """Run Gemini on one thread, returning the parsed analysis fields."""
+def analyze_thread(thread: ThreadData, instructions: str = "") -> dict:
+    """Run Gemini on one thread, returning the parsed analysis fields.
+
+    `instructions` is the admin-supplied "## Your task" prompt; falls back to the
+    built-in default when empty.
+    """
     prompt = ANALYZE_PROMPT.format(
         keyword=thread.get("keyword", ""),
         subreddit=thread.get("subreddit", ""),
@@ -100,6 +111,7 @@ def analyze_thread(thread: ThreadData) -> dict:
         num_comments=thread.get("num_comments", 0),
         selftext=thread.get("selftext", "") or thread.get("google_snippet", "") or "(no body)",
         comments=_format_comments(thread.get("top_comments", [])),
+        instructions=(instructions or "").strip() or DEFAULT_INSTRUCTIONS,
     )
 
     client = _get_client()
@@ -137,6 +149,7 @@ def analyze_threads_node(state: dict) -> dict:
     """LangGraph node: LLM-analyze every thread. Per-thread errors don't stop the run."""
     results = state.get("results", [])
     errors = state.get("errors", [])
+    instructions = state.get("instructions") or ""
 
     if not settings.google_api_key:
         errors.append("[analyze] GOOGLE_API_KEY not configured — skipping analysis")
@@ -144,7 +157,7 @@ def analyze_threads_node(state: dict) -> dict:
 
     for thread in results:
         try:
-            analysis = analyze_thread(thread)
+            analysis = analyze_thread(thread, instructions)
             thread.update(analysis)
             logger.info("Analyzed thread '%s' (tone=%s)", thread.get("thread_id"), thread.get("tone"))
         except Exception as e:
