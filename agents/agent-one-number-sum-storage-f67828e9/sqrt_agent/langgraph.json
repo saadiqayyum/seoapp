@@ -1,0 +1,5 @@
+{
+  "graphs": {
+    "sqrt_agent": "./graph.py:graph"
+  }
+}
