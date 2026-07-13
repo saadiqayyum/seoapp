@@ -1,5 +1,0 @@
-{
-  "graphs": {
-    "adder_agent": "./graph.py:graph"
-  }
-}
