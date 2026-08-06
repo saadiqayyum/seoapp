@@ -85,23 +85,43 @@ def _truncate(text: str, max_chars: int = 14000) -> str:
     return text[:max_chars] + "\n\n[… transcript truncated for length …]"
 
 
-def _proxy_config() -> Optional[Dict[str, str]]:
+def _build_proxy_config():
     """
-    Read an optional residential proxy URL from the environment.
-    Set YOUTUBE_PROXY_URL to a URL like:
-      http://user:pass@proxy-host:port
-    Cloud provider IPs are blocked by YouTube — a residential proxy bypasses this.
-    If the variable is not set the agent proceeds without a proxy (works on
-    non-cloud machines or platforms with residential IPs).
+    Build the correct youtube-transcript-api v1.x ProxyConfig object and a
+    plain proxy URL string for yt-dlp, based on environment variables.
+
+    Priority:
+      1. WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD
+         → WebshareProxyConfig (rotating residential, best for YouTube)
+      2. YOUTUBE_PROXY_URL  (e.g. http://user:pass@host:port)
+         → GenericProxyConfig
+
+    Returns (ytt_proxy_config, ytdlp_proxy_url) — either may be None.
     """
-    url = (
+    from youtube_transcript_api.proxies import WebshareProxyConfig, GenericProxyConfig
+
+    ws_user = os.environ.get("WEBSHARE_PROXY_USERNAME")
+    ws_pass = os.environ.get("WEBSHARE_PROXY_PASSWORD")
+    if ws_user and ws_pass:
+        ytt_cfg = WebshareProxyConfig(
+            proxy_username=ws_user,
+            proxy_password=ws_pass,
+            retries_when_blocked=5,
+        )
+        # Construct the Webshare rotating-proxy URL for yt-dlp
+        ytdlp_url = f"http://{ws_user}:{ws_pass}@p.webshare.io:80"
+        return ytt_cfg, ytdlp_url
+
+    generic_url = (
         os.environ.get("YOUTUBE_PROXY_URL")
         or os.environ.get("HTTPS_PROXY")
         or os.environ.get("HTTP_PROXY")
     )
-    if url:
-        return {"http": url, "https": url}
-    return None
+    if generic_url:
+        ytt_cfg = GenericProxyConfig(https_url=generic_url, http_url=generic_url)
+        return ytt_cfg, generic_url
+
+    return None, None
 
 
 # ---------------------------------------------------------------------------
@@ -111,16 +131,16 @@ def _proxy_config() -> Optional[Dict[str, str]]:
 def extract_transcripts(state: AgentState) -> dict:
     """
     For each URL:
-      1. Try YouTube Transcript API v1.x with optional residential proxy.
+      1. Try YouTube Transcript API v1.x with the correct ProxyConfig object.
       2. Fall back to yt-dlp (android/ios/web clients) + OpenAI Whisper, also proxied.
 
-    YouTube blocks requests from cloud provider IPs (AWS/GCP/Azure).
-    Set the YOUTUBE_PROXY_URL environment variable to a residential proxy URL
-    (e.g. http://user:pass@host:port) to bypass this restriction.
+    YouTube blocks cloud provider IPs (AWS/GCP/Azure).
+    Set WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD for Webshare rotating
+    residential proxies, or YOUTUBE_PROXY_URL for any other proxy.
     """
     transcripts: List[Dict] = []
     warnings: List[str] = []
-    proxies = _proxy_config()
+    ytt_proxy_cfg, ytdlp_proxy_url = _build_proxy_config()
 
     for url in state["video_urls"]:
         entry: Dict[str, Any] = {
@@ -130,14 +150,14 @@ def extract_transcripts(state: AgentState) -> dict:
             "error": None,
         }
 
-        # ── Attempt 1: YouTube Transcript API (v1.x instance-based) ──────────
+        # ── Attempt 1: YouTube Transcript API (v1.x — proxy_config parameter) ─
         video_id = _extract_youtube_id(url)
         if video_id:
             try:
                 from youtube_transcript_api import YouTubeTranscriptApi
 
-                # Pass residential proxy if configured — required on cloud hosts
-                ytt = YouTubeTranscriptApi(proxies=proxies) if proxies else YouTubeTranscriptApi()
+                # v1.x uses proxy_config=ProxyConfig (NOT proxies=dict)
+                ytt = YouTubeTranscriptApi(proxy_config=ytt_proxy_cfg)
 
                 # Strategy A: fetch default language directly
                 fetched = None
@@ -187,7 +207,7 @@ def extract_transcripts(state: AgentState) -> dict:
         # ── Attempt 2: yt-dlp + OpenAI Whisper ────────────────────────────────
         # android/ios clients avoid the JS runtime requirement.
         # --proxy routes through the residential proxy when set.
-        proxy_args = ["--proxy", proxies["https"]] if proxies else []
+        proxy_args = ["--proxy", ytdlp_proxy_url] if ytdlp_proxy_url else []
         ytdlp_success = False
         for player_client in ("android", "ios", "web"):
             try:
