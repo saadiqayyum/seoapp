@@ -85,6 +85,25 @@ def _truncate(text: str, max_chars: int = 14000) -> str:
     return text[:max_chars] + "\n\n[… transcript truncated for length …]"
 
 
+def _proxy_config() -> Optional[Dict[str, str]]:
+    """
+    Read an optional residential proxy URL from the environment.
+    Set YOUTUBE_PROXY_URL to a URL like:
+      http://user:pass@proxy-host:port
+    Cloud provider IPs are blocked by YouTube — a residential proxy bypasses this.
+    If the variable is not set the agent proceeds without a proxy (works on
+    non-cloud machines or platforms with residential IPs).
+    """
+    url = (
+        os.environ.get("YOUTUBE_PROXY_URL")
+        or os.environ.get("HTTPS_PROXY")
+        or os.environ.get("HTTP_PROXY")
+    )
+    if url:
+        return {"http": url, "https": url}
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Node 1 — Extract Transcripts
 # ---------------------------------------------------------------------------
@@ -92,11 +111,16 @@ def _truncate(text: str, max_chars: int = 14000) -> str:
 def extract_transcripts(state: AgentState) -> dict:
     """
     For each URL:
-      1. Try YouTube Transcript API v1.x (instance-based API, no audio download needed).
-      2. Fall back to yt-dlp (android client, no JS runtime required) + OpenAI Whisper.
+      1. Try YouTube Transcript API v1.x with optional residential proxy.
+      2. Fall back to yt-dlp (android/ios/web clients) + OpenAI Whisper, also proxied.
+
+    YouTube blocks requests from cloud provider IPs (AWS/GCP/Azure).
+    Set the YOUTUBE_PROXY_URL environment variable to a residential proxy URL
+    (e.g. http://user:pass@host:port) to bypass this restriction.
     """
     transcripts: List[Dict] = []
     warnings: List[str] = []
+    proxies = _proxy_config()
 
     for url in state["video_urls"]:
         entry: Dict[str, Any] = {
@@ -112,7 +136,8 @@ def extract_transcripts(state: AgentState) -> dict:
             try:
                 from youtube_transcript_api import YouTubeTranscriptApi
 
-                ytt = YouTubeTranscriptApi()
+                # Pass residential proxy if configured — required on cloud hosts
+                ytt = YouTubeTranscriptApi(proxies=proxies) if proxies else YouTubeTranscriptApi()
 
                 # Strategy A: fetch default language directly
                 fetched = None
@@ -124,7 +149,6 @@ def extract_transcripts(state: AgentState) -> dict:
                 # Strategy B: list all transcripts and pick the first available
                 if fetched is None:
                     tlist = ytt.list(video_id)
-                    # Try manually created transcripts first, then generated
                     for finder in (
                         lambda: tlist.find_manually_created_transcript(
                             ["en", "en-US", "en-GB"]
@@ -133,8 +157,7 @@ def extract_transcripts(state: AgentState) -> dict:
                             ["en", "en-US", "en-GB"]
                         ),
                         lambda: tlist.find_transcript(["en", "en-US", "en-GB"]),
-                        # Last resort: grab first transcript regardless of language
-                        lambda: next(iter(tlist)),
+                        lambda: next(iter(tlist)),  # any language as last resort
                     ):
                         try:
                             t = finder()
@@ -146,11 +169,10 @@ def extract_transcripts(state: AgentState) -> dict:
                 if fetched is None:
                     raise RuntimeError("No transcript found via any strategy")
 
-                # FetchedTranscript snippets have a .text attribute (v1.x)
+                # v1.x snippets expose .text; fall back to dict for older builds
                 try:
                     text = " ".join(snippet.text for snippet in fetched)
                 except AttributeError:
-                    # Older dict-based format fallback
                     text = " ".join(item["text"] for item in fetched)
 
                 entry["transcript_text"] = text
@@ -163,8 +185,9 @@ def extract_transcripts(state: AgentState) -> dict:
                 warnings.append(f"YouTube Transcript API failed for {url}: {yt_err}")
 
         # ── Attempt 2: yt-dlp + OpenAI Whisper ────────────────────────────────
-        # Use android/ios player clients (no JS runtime needed) and disable
-        # certificate checks to handle environments with self-signed proxies.
+        # android/ios clients avoid the JS runtime requirement.
+        # --proxy routes through the residential proxy when set.
+        proxy_args = ["--proxy", proxies["https"]] if proxies else []
         ytdlp_success = False
         for player_client in ("android", "ios", "web"):
             try:
@@ -178,6 +201,7 @@ def extract_transcripts(state: AgentState) -> dict:
                             "--audio-quality", "5",
                             "--extractor-args", f"youtube:player_client={player_client}",
                             "--no-check-certificate",
+                            *proxy_args,
                             "-o", audio_out,
                             "--no-playlist",
                             url,
@@ -201,7 +225,7 @@ def extract_transcripts(state: AgentState) -> dict:
                     entry["transcript_text"] = resp.text
                     entry["source"] = f"whisper ({player_client} client)"
                     ytdlp_success = True
-                    break  # success — no need to try other clients
+                    break
             except Exception as client_err:
                 warnings.append(
                     f"yt-dlp ({player_client}) failed for {url}: {client_err}"
