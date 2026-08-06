@@ -128,18 +128,71 @@ def _build_proxy_config():
 # Node 1 — Extract Transcripts
 # ---------------------------------------------------------------------------
 
+def _supadata_fetch(url: str, api_key: str) -> str:
+    """
+    Fetch transcript via Supadata API (cloud-IP-safe, no proxy needed).
+    Handles both synchronous (HTTP 200) and asynchronous (HTTP 202 + polling) responses.
+    Raises RuntimeError on failure.
+    """
+    import requests as _req
+    import time
+
+    resp = _req.get(
+        "https://api.supadata.ai/v1/transcript",
+        params={"url": url, "text": "true"},
+        headers={"x-api-key": api_key},
+        timeout=30,
+    )
+
+    # Synchronous result
+    if resp.status_code == 200:
+        data = resp.json()
+        content = data.get("content", "")
+        if isinstance(content, list):
+            return " ".join(seg.get("text", "") for seg in content)
+        return str(content)
+
+    # Async job — poll until done (max ~2 minutes)
+    if resp.status_code == 202:
+        job_id = resp.json().get("jobId")
+        if not job_id:
+            raise RuntimeError("Supadata returned 202 but no jobId")
+        for _ in range(60):
+            time.sleep(2)
+            poll = _req.get(
+                f"https://api.supadata.ai/v1/transcript/{job_id}",
+                headers={"x-api-key": api_key},
+                timeout=30,
+            )
+            if poll.status_code != 200:
+                continue
+            result = poll.json()
+            status = result.get("status")
+            if status == "completed":
+                content = result.get("content", "")
+                if isinstance(content, list):
+                    return " ".join(seg.get("text", "") for seg in content)
+                return str(content)
+            if status == "failed":
+                raise RuntimeError(f"Supadata job failed: {result.get('error')}")
+        raise RuntimeError("Supadata job timed out after 2 minutes")
+
+    raise RuntimeError(f"Supadata API error {resp.status_code}: {resp.text[:300]}")
+
+
 def extract_transcripts(state: AgentState) -> dict:
     """
-    For each URL:
-      1. Try YouTube Transcript API v1.x with the correct ProxyConfig object.
-      2. Fall back to yt-dlp (android/ios/web clients) + OpenAI Whisper, also proxied.
+    For each URL, try transcript extraction in order:
 
-    YouTube blocks cloud provider IPs (AWS/GCP/Azure).
-    Set WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD for Webshare rotating
-    residential proxies, or YOUTUBE_PROXY_URL for any other proxy.
+    1. Supadata API  — cloud-IP-safe, no proxy needed (set SUPADATA_API_KEY).
+    2. youtube-transcript-api with WebshareProxyConfig  — needs
+       WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD, or YOUTUBE_PROXY_URL.
+    3. yt-dlp + OpenAI Whisper  — audio download fallback; also proxied when set.
+       Works for non-YouTube URLs too.
     """
     transcripts: List[Dict] = []
     warnings: List[str] = []
+    supadata_key = os.environ.get("SUPADATA_API_KEY")
     ytt_proxy_cfg, ytdlp_proxy_url = _build_proxy_config()
 
     for url in state["video_urls"]:
@@ -149,47 +202,62 @@ def extract_transcripts(state: AgentState) -> dict:
             "source": "none",
             "error": None,
         }
-
-        # ── Attempt 1: YouTube Transcript API (v1.x — proxy_config parameter) ─
         video_id = _extract_youtube_id(url)
+
+        # ── Method 1: Supadata API (works from any cloud IP) ──────────────────
+        if supadata_key:
+            try:
+                text = _supadata_fetch(url, supadata_key)
+                if text.strip():
+                    entry["transcript_text"] = text
+                    entry["source"] = "supadata"
+                    if video_id:
+                        entry["video_id"] = video_id
+                    transcripts.append(entry)
+                    continue
+                else:
+                    warnings.append(f"Supadata returned empty transcript for {url}")
+            except Exception as sup_err:
+                warnings.append(f"Supadata failed for {url}: {sup_err}")
+
+        # ── Method 2: youtube-transcript-api with ProxyConfig ─────────────────
         if video_id:
             try:
                 from youtube_transcript_api import YouTubeTranscriptApi
 
-                # v1.x uses proxy_config=ProxyConfig (NOT proxies=dict)
                 ytt = YouTubeTranscriptApi(proxy_config=ytt_proxy_cfg)
 
-                # Strategy A: fetch default language directly
+                # Strategy A: direct fetch (default/English)
                 fetched = None
+                fetch_err = None
                 try:
                     fetched = ytt.fetch(video_id)
-                except Exception:
-                    pass
+                except Exception as e:
+                    fetch_err = e
 
-                # Strategy B: list all transcripts and pick the first available
+                # Strategy B: list → prefer manual EN → auto EN → any
                 if fetched is None:
-                    tlist = ytt.list(video_id)
-                    for finder in (
-                        lambda: tlist.find_manually_created_transcript(
-                            ["en", "en-US", "en-GB"]
-                        ),
-                        lambda: tlist.find_generated_transcript(
-                            ["en", "en-US", "en-GB"]
-                        ),
-                        lambda: tlist.find_transcript(["en", "en-US", "en-GB"]),
-                        lambda: next(iter(tlist)),  # any language as last resort
-                    ):
-                        try:
-                            t = finder()
-                            fetched = t.fetch()
-                            break
-                        except Exception:
-                            continue
+                    list_err = None
+                    try:
+                        tlist = ytt.list(video_id)
+                        for finder in (
+                            lambda: tlist.find_manually_created_transcript(["en", "en-US", "en-GB"]),
+                            lambda: tlist.find_generated_transcript(["en", "en-US", "en-GB"]),
+                            lambda: tlist.find_transcript(["en", "en-US", "en-GB"]),
+                            lambda: next(iter(tlist)),
+                        ):
+                            try:
+                                fetched = finder().fetch()
+                                break
+                            except Exception:
+                                continue
+                    except Exception as e:
+                        list_err = e
 
                 if fetched is None:
-                    raise RuntimeError("No transcript found via any strategy")
+                    details = "; ".join(filter(None, [str(fetch_err), str(list_err)]))
+                    raise RuntimeError(f"No transcript found ({details})")
 
-                # v1.x snippets expose .text; fall back to dict for older builds
                 try:
                     text = " ".join(snippet.text for snippet in fetched)
                 except AttributeError:
@@ -204,9 +272,9 @@ def extract_transcripts(state: AgentState) -> dict:
             except Exception as yt_err:
                 warnings.append(f"YouTube Transcript API failed for {url}: {yt_err}")
 
-        # ── Attempt 2: yt-dlp + OpenAI Whisper ────────────────────────────────
-        # android/ios clients avoid the JS runtime requirement.
-        # --proxy routes through the residential proxy when set.
+        # ── Method 3: yt-dlp + OpenAI Whisper ────────────────────────────────
+        # Tries android → ios → web player clients.
+        # Uses --proxy when a proxy URL is available.
         proxy_args = ["--proxy", ytdlp_proxy_url] if ytdlp_proxy_url else []
         ytdlp_success = False
         for player_client in ("android", "ios", "web"):
@@ -237,19 +305,15 @@ def extract_transcripts(state: AgentState) -> dict:
                         )
 
                     import openai as _openai
-                    client = _openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+                    oai = _openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
                     with open(audio_file, "rb") as f:
-                        resp = client.audio.transcriptions.create(
-                            model="whisper-1", file=f
-                        )
+                        resp = oai.audio.transcriptions.create(model="whisper-1", file=f)
                     entry["transcript_text"] = resp.text
                     entry["source"] = f"whisper ({player_client} client)"
                     ytdlp_success = True
                     break
-            except Exception as client_err:
-                warnings.append(
-                    f"yt-dlp ({player_client}) failed for {url}: {client_err}"
-                )
+            except Exception as dl_err:
+                warnings.append(f"yt-dlp ({player_client}) failed for {url}: {dl_err}")
 
         if not ytdlp_success:
             entry["error"] = "All transcript extraction methods failed — see warnings"
