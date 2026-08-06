@@ -1,0 +1,6 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "video_script_agent": "./graph.py:graph"
+  }
+}
