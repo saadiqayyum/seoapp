@@ -1,0 +1,5 @@
+{
+  "graphs": {
+    "palindrome_checker": "./graph.py:graph"
+  }
+}
