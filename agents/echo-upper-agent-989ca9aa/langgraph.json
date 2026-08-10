@@ -1,0 +1,5 @@
+{
+  "graphs": {
+    "echo_upper_graph": "./graph.py:graph"
+  }
+}
