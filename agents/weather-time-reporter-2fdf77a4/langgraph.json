@@ -1,0 +1,7 @@
+{
+  "graphs": {
+    "time_and_temperature": "./graph.py:graph"
+  },
+  "python_version": "3.11",
+  "dependencies": ["."]
+}
