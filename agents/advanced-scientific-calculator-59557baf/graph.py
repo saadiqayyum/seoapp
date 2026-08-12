@@ -85,12 +85,12 @@ def execute_node(state: CalcState) -> CalcState:
         sin, cos, tan, cot, sec, csc,
         asin, acos, atan, atan2, acot,
         sinh, cosh, tanh, asinh, acosh, atanh,
-        log, ln, exp, sqrt, cbrt, root, Abs,
+        log, exp, sqrt, root, Abs,
         factorial, binomial, fibonacci, lucas,
         gcd, lcm, isprime, factorint, totient,
         ceiling, floor, sign, Piecewise,
-        Matrix, det, trace, transpose, eigenvals, eigenvects,
-        Rational, Integer, Float, ComplexNumber,
+        Matrix,
+        Rational, Integer, Float,
         pi, E, I, oo, zoo, nan, GoldenRatio, EulerGamma,
         Eq, Ne, Lt, Le, Gt, Ge,
         simplify, expand, factor, collect, cancel, apart, together,
@@ -100,6 +100,17 @@ def execute_node(state: CalcState) -> CalcState:
     from statistics import mean, median, mode, stdev, variance, pstdev, pvariance
 
     precision = state.get("precision", 10)
+
+    # Matrix helpers — eigenvals/eigenvects/det/trace are Matrix methods, not top-level
+    def det(m):      return m.det()
+    def trace(m):    return m.trace()
+    def transpose(m): return m.T
+    def eigenvals(m): return m.eigenvals()
+    def eigenvects(m): return m.eigenvects()
+
+    # ln is an alias for log in SymPy; cbrt via root(x,3)
+    ln   = log
+    cbrt = lambda x: root(x, 3)
 
     namespace: dict = {
         # builtins subset
@@ -130,8 +141,10 @@ def execute_node(state: CalcState) -> CalcState:
         "factorint": factorint, "totient": totient,
         "ceiling": ceiling, "floor": floor, "sign": sign,
         "Piecewise": Piecewise,
-        "Matrix": Matrix, "det": det, "trace": trace,
-        "transpose": transpose, "eigenvals": eigenvals, "eigenvects": eigenvects,
+        # Matrix + helper wrappers
+        "Matrix": Matrix,
+        "det": det, "trace": trace, "transpose": transpose,
+        "eigenvals": eigenvals, "eigenvects": eigenvects,
         "Rational": Rational, "Integer": Integer, "Float": Float,
         "pi": pi, "E": E, "I": I, "oo": oo,
         "GoldenRatio": GoldenRatio, "EulerGamma": EulerGamma,
@@ -149,7 +162,7 @@ def execute_node(state: CalcState) -> CalcState:
         # outputs
         "result": None,
         "steps": [],
-        # helper: degree conversion
+        # helpers: degree conversion factors
         "deg": math.pi / 180,
         "rad": 180 / math.pi,
     }
