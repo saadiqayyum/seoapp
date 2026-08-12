@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "graphs": {
+    "scientific_calculator": {
+      "name": "Advanced Scientific Calculator",
+      "description": "Computes any math expression — arithmetic, algebra, calculus, trigonometry, statistics, matrices, and more — and returns the result with step-by-step explanation.",
+      "category": "other",
+      "inputFields": [
+        {
+          "key": "expression",
+          "label": "Expression / Problem",
+          "description": "Any mathematical expression or natural-language problem. Examples: 'sin(45°)', 'integral of x³ from 0 to 2', 'solve x²−5x+6=0', 'eigenvalues of [[1,2],[3,4]]', 'mean of [12,15,9,18,21]', '100!'",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "precision",
+          "label": "Decimal Precision",
+          "description": "Number of significant figures used in numerical results (default: 10). Increase for more decimal places.",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "configFields": [
+        {
+          "key": "ANTHROPIC_API_KEY",
+          "label": "Anthropic API Key",
+          "description": "Used to power the interpreter and formatter nodes.",
+          "type": "string",
+          "required": true,
+          "secret": true,
+          "provider": "anthropic"
+        }
+      ],
+      "responseType": "object",
+      "responseFields": [
+        {
+          "key": "result",
+          "label": "Result",
+          "description": "The computed answer as a string (numeric, symbolic, list of solutions, matrix, etc.).",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "steps",
+          "label": "Computation Steps",
+          "description": "Ordered list of intermediate steps taken during computation.",
+          "type": "json",
+          "required": false
+        },
+        {
+          "key": "explanation",
+          "label": "Explanation",
+          "description": "Human-readable explanation and mathematical context for the result.",
+          "type": "string",
+          "required": true
+        }
+      ]
+    }
+  }
+}
