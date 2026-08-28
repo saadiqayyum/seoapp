@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "graphs": {
+    "weather_checker": {
+      "name": "Weather Checker",
+      "description": "Fetches current weather conditions for any city worldwide using the OpenWeatherMap API.",
+      "category": "productivity",
+      "inputFields": [
+        {
+          "key": "city",
+          "label": "City",
+          "description": "Name of the city to check the weather for (e.g. London, Tokyo, New York)",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "configFields": [
+        {
+          "key": "OPENWEATHER_API_KEY",
+          "label": "OpenWeatherMap API Key",
+          "description": "Your API key from https://openweathermap.org/api. Free tier is sufficient.",
+          "type": "string",
+          "required": true,
+          "secret": true
+        }
+      ],
+      "responseType": "object",
+      "responseFields": [
+        { "key": "city",               "label": "City",                  "type": "string",  "required": true  },
+        { "key": "country",            "label": "Country Code",          "type": "string",  "required": false },
+        { "key": "condition",          "label": "Condition",             "type": "string",  "required": true  },
+        { "key": "description",        "label": "Description",           "type": "string",  "required": true  },
+        { "key": "temperature_c",      "label": "Temperature (°C)",      "type": "number",  "required": true  },
+        { "key": "feels_like_c",       "label": "Feels Like (°C)",       "type": "number",  "required": false },
+        { "key": "temp_min_c",         "label": "Min Temperature (°C)",  "type": "number",  "required": false },
+        { "key": "temp_max_c",         "label": "Max Temperature (°C)",  "type": "number",  "required": false },
+        { "key": "humidity_percent",   "label": "Humidity (%)",          "type": "number",  "required": false },
+        { "key": "pressure_hpa",       "label": "Pressure (hPa)",        "type": "number",  "required": false },
+        { "key": "wind_speed_mps",     "label": "Wind Speed (m/s)",      "type": "number",  "required": false },
+        { "key": "wind_direction_deg", "label": "Wind Direction (°)",    "type": "number",  "required": false },
+        { "key": "cloudiness_percent", "label": "Cloudiness (%)",        "type": "number",  "required": false },
+        { "key": "visibility_m",       "label": "Visibility (m)",        "type": "number",  "required": false },
+        { "key": "error",              "label": "Error",                 "type": "string",  "required": false }
+      ]
+    }
+  }
+}
